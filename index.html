@@ -5,10 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Rugama Super Market - Master & Statement Engine</title>
   
+  <!-- Tailwind CSS & Lucide Icons -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Supabase JS Library -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- SheetJS for Excel Import / Export -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- External GitHub config.js Connection -->
+  <script src="config.js"></script>
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+Malayalam:wght@400;500;600;700&display=swap');
@@ -23,7 +29,7 @@
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
 
-  <!-- 1. LOGIN SCREEN -->
+  <!-- 1. LOGIN SCREEN OVERLAY (ENTER KEY & MOBILE GO/DONE ENABLED) -->
   <div id="loginScreen" class="fixed inset-0 bg-slate-900/90 flex items-center justify-center z-[99999] p-4">
     <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border text-center space-y-4">
       <div class="w-14 h-14 rounded-2xl bg-emerald-600 text-white flex items-center justify-center mx-auto shadow-lg">
@@ -33,12 +39,27 @@
         <h2 class="text-base font-extrabold text-slate-800">റൂഗാമ സൂപ്പർ മാർക്കറ്റ് ലോഗിൻ</h2>
         <p class="text-xs text-slate-500 mt-1">തുടരാൻ പാസ്‌വേഡ് നൽകുക (PIN: 1234)</p>
       </div>
-      <input type="password" maxlength="4" id="loginPasswordInput" placeholder="••••" class="text-center text-2xl tracking-[0.5em] font-black w-44 py-3 border-2 rounded-2xl mx-auto block outline-none focus:border-emerald-600 bg-slate-50" />
-      <button onclick="verifyLogin()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-md">ലോഗിൻ ചെയ്യുക</button>
+
+      <form onsubmit="event.preventDefault(); verifyLogin();" class="space-y-4">
+        <input 
+          type="password" 
+          maxlength="4" 
+          id="loginPasswordInput" 
+          placeholder="••••" 
+          autocomplete="current-password"
+          autofocus
+          class="text-center text-2xl tracking-[0.5em] font-black w-44 py-3 border-2 rounded-2xl mx-auto block outline-none focus:border-emerald-600 bg-slate-50" 
+        />
+        <button 
+          type="submit" 
+          class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-md cursor-pointer">
+          ലോഗിൻ ചെയ്യുക
+        </button>
+      </form>
     </div>
   </div>
 
-  <!-- 2. HEADER WITH MULTI-SHOP SELECTOR -->
+  <!-- 2. HEADER WITH DYNAMIC MULTI-SHOP SELECTOR -->
   <header class="bg-slate-900 text-white shadow-md sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center space-x-3">
@@ -51,22 +72,20 @@
         </div>
       </div>
 
-      <!-- Shop Selector -->
+      <!-- Shop Selector: Automatically populated from config.js -->
       <div class="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700">
         <i data-lucide="store" class="w-4 h-4 text-emerald-400"></i>
         <span class="text-xs font-semibold text-slate-300">ഷോപ്പ്:</span>
         <select id="selectedShopKey" onchange="switchActiveShop()" class="bg-slate-950 text-emerald-300 text-xs font-bold rounded-lg px-2 py-1 outline-none border border-slate-700 cursor-pointer">
-          <option value="rugama_main">Rugama Main Supermarket</option>
-          <option value="branch_kakkanad">Branch 2 - Kakkanad Residency</option>
-          <option value="branch_express">Branch 3 - Express Mart</option>
+          <!-- Dynamically populated from window.SHOPS_CONFIG -->
         </select>
       </div>
 
       <div class="flex items-center gap-2">
-        <button onclick="fetchAllData()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-3 py-2 rounded-lg border border-slate-700 transition flex items-center gap-1">
+        <button onclick="fetchAllData()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-3 py-2 rounded-lg border border-slate-700 transition flex items-center gap-1 cursor-pointer">
           <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> റിഫ്രഷ്
         </button>
-        <button onclick="logoutApp()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition flex items-center gap-1">
+        <button onclick="logoutApp()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition flex items-center gap-1 cursor-pointer">
           <i data-lucide="log-out" class="w-3.5 h-3.5"></i> ലോഗ് ഔട്ട്
         </button>
       </div>
@@ -76,13 +95,13 @@
   <!-- 3. NAVIGATION TABS -->
   <div class="bg-white border-b sticky top-[61px] z-30 shadow-sm">
     <div class="max-w-7xl mx-auto flex overflow-x-auto text-xs font-bold text-slate-600">
-      <button onclick="switchTab('master')" id="tabBtn-master" class="tab-btn px-5 py-3 border-b-2 border-emerald-600 text-emerald-700 flex items-center gap-2 whitespace-nowrap">
+      <button onclick="switchTab('master')" id="tabBtn-master" class="tab-btn px-5 py-3 border-b-2 border-emerald-600 text-emerald-700 flex items-center gap-2 whitespace-nowrap cursor-pointer">
         <i data-lucide="sliders-horizontal" class="w-4 h-4"></i> മാസ്റ്റർ എൻട്രികൾ
       </button>
-      <button onclick="switchTab('statements')" id="tabBtn-statements" class="tab-btn px-5 py-3 border-b-2 border-transparent hover:text-emerald-600 flex items-center gap-2 whitespace-nowrap">
+      <button onclick="switchTab('statements')" id="tabBtn-statements" class="tab-btn px-5 py-3 border-b-2 border-transparent hover:text-emerald-600 flex items-center gap-2 whitespace-nowrap cursor-pointer">
         <i data-lucide="file-text" class="w-4 h-4 text-indigo-600"></i> സ്റ്റേറ്റ്മെന്റുകൾ (Reports)
       </button>
-      <button onclick="switchTab('excel')" id="tabBtn-excel" class="tab-btn px-5 py-3 border-b-2 border-transparent hover:text-emerald-600 flex items-center gap-2 whitespace-nowrap">
+      <button onclick="switchTab('excel')" id="tabBtn-excel" class="tab-btn px-5 py-3 border-b-2 border-transparent hover:text-emerald-600 flex items-center gap-2 whitespace-nowrap cursor-pointer">
         <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-600"></i> എക്സൽ ഇമ്പോർട്ട് & എക്സ്പോർട്ട്
       </button>
     </div>
@@ -91,7 +110,7 @@
   <!-- 4. MAIN CONTENT AREA -->
   <main class="max-w-7xl mx-auto w-full px-4 py-4 flex-1 space-y-4">
 
-    <!-- TAB 1: MASTER ENTRIES -->
+    <!-- ==================== TAB 1: MASTER ENTRIES ==================== -->
     <div id="view-master" class="tab-view space-y-4">
       <div class="bg-white p-4 rounded-2xl border shadow-sm space-y-3">
         <h2 class="font-bold text-sm text-slate-800 border-b pb-2 flex items-center gap-2">
@@ -107,14 +126,14 @@
             <input type="number" step="any" id="setOpeningBank" placeholder="0.00" class="w-full text-xs font-bold p-2.5 rounded-lg border bg-slate-50" />
           </div>
           <div class="flex items-end">
-            <button onclick="saveAppSettingsBalances()" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition flex justify-center items-center gap-1 shadow">
+            <button onclick="saveAppSettingsBalances()" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition flex justify-center items-center gap-1 shadow cursor-pointer">
               <i data-lucide="save" class="w-3.5 h-3.5"></i> സേവ് ചെയ്യുക
             </button>
           </div>
         </div>
       </div>
 
-      <!-- MASTER CARDS -->
+      <!-- MASTER CRUD CARDS -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <!-- AGENTS -->
         <div class="bg-white p-4 rounded-2xl border shadow-sm space-y-3 flex flex-col justify-between">
@@ -124,7 +143,7 @@
             </h2>
             <div class="flex gap-2">
               <input type="text" id="masterAgentName" placeholder="ഏജന്റ് പേര് *" class="flex-1 text-xs p-2.5 rounded-lg border bg-slate-50" />
-              <button onclick="addMasterItem('agents')" class="py-2 px-4 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1">
+              <button onclick="addMasterItem('agents')" class="py-2 px-4 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer">
                 <i data-lucide="plus" class="w-3.5 h-3.5"></i> സേവ്
               </button>
             </div>
@@ -154,7 +173,7 @@
               </select>
               <input type="number" step="any" id="masterCustOpening" placeholder="പഴയ കടം / ബാലൻസ് (₹)" class="text-xs p-2.5 rounded-lg border bg-slate-50" />
             </div>
-            <button onclick="addMasterItem('customers')" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex justify-center items-center gap-1">
+            <button onclick="addMasterItem('customers')" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex justify-center items-center gap-1 cursor-pointer">
               <i data-lucide="plus" class="w-3.5 h-3.5"></i> കസ്റ്റമറെ സേവ് ചെയ്യുക
             </button>
           </div>
@@ -178,7 +197,7 @@
               </select>
               <input type="number" step="any" id="masterVendorOpening" placeholder="പഴയ ബാക്കി (₹)" class="text-xs p-2.5 rounded-lg border bg-slate-50" />
             </div>
-            <button onclick="addMasterItem('vendors')" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition flex justify-center items-center gap-1">
+            <button onclick="addMasterItem('vendors')" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition flex justify-center items-center gap-1 cursor-pointer">
               <i data-lucide="plus" class="w-3.5 h-3.5"></i> വെണ്ടറെ സേവ് ചെയ്യുക
             </button>
           </div>
@@ -202,7 +221,7 @@
               <input type="number" step="any" id="masterEmpSalary" placeholder="മാസ ശമ്പളം (₹)" class="text-xs p-2.5 rounded-lg border bg-slate-50" />
               <input type="number" step="any" id="masterEmpOpening" placeholder="തുടക്കത്തിൽ കൊടുക്കാനുള്ള ബാക്കി (₹)" class="text-xs p-2.5 rounded-lg border bg-slate-50" />
             </div>
-            <button onclick="addMasterItem('employees')" class="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold transition flex justify-center items-center gap-1">
+            <button onclick="addMasterItem('employees')" class="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold transition flex justify-center items-center gap-1 cursor-pointer">
               <i data-lucide="plus" class="w-3.5 h-3.5"></i> ജീവനക്കാരനെ സേവ് ചെയ്യുക
             </button>
           </div>
@@ -221,7 +240,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <input type="text" id="masterExpName" placeholder="ചിലവ് പേര് (ഉദാ: വാടക, EB Bill) *" class="text-xs p-2.5 rounded-lg border bg-slate-50" />
           <input type="number" step="any" id="masterExpOpening" placeholder="പഴയ ബാക്കി തുക (Opening ₹)" class="text-xs p-2.5 rounded-lg border bg-slate-50" />
-          <button onclick="addMasterItem('expenses_master')" class="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition flex justify-center items-center gap-1">
+          <button onclick="addMasterItem('expenses_master')" class="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition flex justify-center items-center gap-1 cursor-pointer">
             <i data-lucide="plus" class="w-3.5 h-3.5"></i> ചിലവ് ഇനം സേവ് ചെയ്യുക
           </button>
         </div>
@@ -232,7 +251,7 @@
       </div>
     </div>
 
-    <!-- TAB 2: DETAILED STATEMENTS -->
+    <!-- ==================== TAB 2: DETAILED STATEMENTS ==================== -->
     <div id="view-statements" class="tab-view hidden space-y-4">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -297,7 +316,7 @@
             <input type="date" id="statementDateInput" class="w-full border rounded-lg p-2.5 text-xs bg-slate-50 font-semibold" />
           </div>
 
-          <button onclick="generateLiveStatement()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex justify-center items-center gap-2 shadow">
+          <button onclick="generateLiveStatement()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex justify-center items-center gap-2 shadow cursor-pointer">
             <i data-lucide="search" class="w-4 h-4"></i> Generate Statement
           </button>
         </div>
@@ -306,7 +325,7 @@
         <div class="lg:col-span-2 space-y-2">
           <div class="flex justify-between items-center px-1">
             <span class="text-xs text-slate-500 font-semibold">Report Preview:</span>
-            <button onclick="window.print()" class="bg-slate-900 hover:bg-black text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 shadow">
+            <button onclick="window.print()" class="bg-slate-900 hover:bg-black text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 shadow cursor-pointer">
               <i data-lucide="printer" class="w-3.5 h-3.5"></i> Print / PDF
             </button>
           </div>
@@ -324,7 +343,7 @@
       </div>
     </div>
 
-    <!-- TAB 3: EXCEL IMPORT & EXPORT -->
+    <!-- ==================== TAB 3: EXCEL IMPORT & EXPORT ==================== -->
     <div id="view-excel" class="tab-view hidden space-y-4">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="bg-white p-5 rounded-2xl border shadow-sm space-y-4">
@@ -346,10 +365,10 @@
             <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100" />
           </div>
           <div class="flex gap-2">
-            <button onclick="processExcelUpload()" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 shadow">
+            <button onclick="processExcelUpload()" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 shadow cursor-pointer">
               <i data-lucide="check" class="w-4 h-4"></i> അപ്‌ലോഡ് ചെയ്യുക
             </button>
-            <button onclick="downloadSampleTemplate()" class="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold border transition">
+            <button onclick="downloadSampleTemplate()" class="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold border transition cursor-pointer">
               മാതൃകാ ഫയൽ
             </button>
           </div>
@@ -364,7 +383,7 @@
             സൂപ്പർബേസിലുള്ള മുഴുവൻ മാസ്റ്റർ ലിസ്റ്റുകളും എക്സൽ ഫയലായി ഡൗൺലോഡ് ചെയ്ത് സൂക്ഷിക്കാം.
           </p>
           <div class="pt-4">
-            <button onclick="exportAllToExcel()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow">
+            <button onclick="exportAllToExcel()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow cursor-pointer">
               <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> മുഴുവൻ ഡാറ്റയും ഡൗൺലോഡ് ചെയ്യുക (.xlsx)
             </button>
           </div>
@@ -373,23 +392,24 @@
     </div>
   </main>
 
-  <!-- EDIT & PIN MODALS -->
+  <!-- EDIT MODAL -->
   <div id="editRecordModal" class="fixed inset-0 bg-slate-900/70 flex items-center justify-center z-[9999] hidden p-4">
     <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border space-y-4">
       <div class="flex justify-between items-center border-b pb-2">
         <h3 id="editModalTitle" class="text-sm font-extrabold text-slate-800">വിവരങ്ങൾ തിരുത്തുക</h3>
-        <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-4 h-4"></i></button>
+        <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 cursor-pointer"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
       <input type="hidden" id="editModalTable">
       <input type="hidden" id="editModalId">
       <div id="editModalFormFields" class="space-y-3"></div>
       <div class="flex justify-end gap-2 pt-3 border-t">
-        <button type="button" onclick="closeEditModal()" class="px-4 py-2 rounded-lg bg-slate-100 text-xs font-semibold">റദ്ദാക്കുക</button>
-        <button type="button" onclick="saveRecordEdit()" class="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold">അപ്‌ഡേറ്റ് ചെയ്യുക</button>
+        <button type="button" onclick="closeEditModal()" class="px-4 py-2 rounded-lg bg-slate-100 text-xs font-semibold cursor-pointer">റദ്ദാക്കുക</button>
+        <button type="button" onclick="saveRecordEdit()" class="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer">അപ്‌ഡേറ്റ് ചെയ്യുക</button>
       </div>
     </div>
   </div>
 
+  <!-- PIN DELETE MODAL -->
   <div id="pinModal" class="fixed inset-0 bg-slate-900/70 flex items-center justify-center z-[9999] hidden p-4">
     <div class="bg-white rounded-2xl max-w-xs w-full p-5 shadow-2xl border text-center space-y-3">
       <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto">
@@ -399,33 +419,15 @@
       <p class="text-xs text-slate-500">ഡിലീറ്റ് ചെയ്യാൻ അഡ്മിൻ പിൻ നൽകുക (PIN: 1234)</p>
       <input type="password" maxlength="4" id="pinInput" placeholder="••••" class="text-center text-2xl tracking-[0.5em] font-black w-36 py-2 border-2 rounded-xl mx-auto block outline-none focus:border-rose-500" />
       <div class="flex gap-2 pt-2">
-        <button onclick="closePinModal()" class="flex-1 py-2 rounded-lg bg-slate-100 text-xs font-semibold">റദ്ദാക്കുക</button>
-        <button onclick="verifyPinAndExecute()" class="flex-1 py-2 rounded-lg bg-rose-600 text-white text-xs font-bold">ഡിലീറ്റ്</button>
+        <button onclick="closePinModal()" class="flex-1 py-2 rounded-lg bg-slate-100 text-xs font-semibold cursor-pointer">റദ്ദാക്കുക</button>
+        <button onclick="verifyPinAndExecute()" class="flex-1 py-2 rounded-lg bg-rose-600 text-white text-xs font-bold cursor-pointer">ഡിലീറ്റ്</button>
       </div>
     </div>
   </div>
 
-  <!-- JAVASCRIPT LOGIC -->
+  <!-- SCRIPT LOGIC -->
   <script>
-    const SHOPS_CONFIG = {
-      rugama_main: {
-        name: "Rugama Main Supermarket",
-        url: "https://elubqoicerkldrufqcbj.supabase.co",
-        key: "sb_publishable_zsEKreCmounELozZ5EQ3Lg_aXyut9EK"
-      },
-      branch_kakkanad: {
-        name: "Branch 2 - Kakkanad Residency",
-        url: "https://your-branch2-id.supabase.co",
-        key: "your-branch2-anon-key"
-      },
-      branch_express: {
-        name: "Branch 3 - Express Mart",
-        url: "https://your-branch3-id.supabase.co",
-        key: "your-branch3-anon-key"
-      }
-    };
-
-    let activeShopKey = "rugama_main";
+    let activeShopId = null;
     let supabaseClient = null;
 
     let masterAgents = [];
@@ -443,46 +445,104 @@
     document.addEventListener("DOMContentLoaded", () => {
       if (sessionStorage.getItem("RUGAMA_LOGGED_IN") === "true") {
         document.getElementById("loginScreen").classList.add("hidden");
+      } else {
+        setTimeout(() => {
+          const inp = document.getElementById("loginPasswordInput");
+          if (inp) inp.focus();
+        }, 300);
       }
 
-      const today = new Date().toISOString().split('T')[0];
+      // Saudi Business Date using config.js helper
+      const today = (window.getSaudiBusinessDate && typeof window.getSaudiBusinessDate === 'function') 
+                    ? window.getSaudiBusinessDate() 
+                    : new Date().toISOString().split('T')[0];
       const monthNow = today.substring(0, 7);
+
       if(document.getElementById("masterEmpJoin")) document.getElementById("masterEmpJoin").value = today;
       if(document.getElementById("statementDateInput")) document.getElementById("statementDateInput").value = today;
       if(document.getElementById("statementMonthInput")) document.getElementById("statementMonthInput").value = monthNow;
 
       lucide.createIcons();
-      initSupabaseClient();
+      initMultiShopSystem();
     });
 
-    function initSupabaseClient() {
-      const config = SHOPS_CONFIG[activeShopKey];
-      document.getElementById("shopHeaderTitle").innerText = config.name;
-      document.getElementById("openingShopLabel").innerText = config.name;
+    // 1. DYNAMIC MULTI-SHOP INITIALIZER (Binds directly with config.js)
+    function initMultiShopSystem() {
+      const select = document.getElementById("selectedShopKey");
+      select.innerHTML = "";
 
-      if (!config.url || config.url.includes("your-branch")) {
-        alert(`${config.name} നുള്ള Supabase URL / Key കോഡിൽ മാറ്റിയ ശേഷം ഇത് കണക്ട് ആകും.`);
+      if (!window.SHOPS_CONFIG || !Array.isArray(window.SHOPS_CONFIG) || window.SHOPS_CONFIG.length === 0) {
+        alert("config.js file-il SHOPS_CONFIG kandethaan kazhinjilla!");
         return;
       }
 
-      supabaseClient = window.supabase.createClient(config.url, config.key);
+      // Populate shop dropdown dynamically from config.js
+      window.SHOPS_CONFIG.forEach(shop => {
+        const opt = document.createElement("option");
+        opt.value = shop.id;
+        opt.innerText = shop.name;
+        select.appendChild(opt);
+      });
+
+      // Restore previously selected shop from LocalStorage
+      const savedShopId = localStorage.getItem("RUGAMA_SELECTED_SHOP_ID");
+      const matchedShop = window.SHOPS_CONFIG.find(s => s.id === savedShopId);
+
+      if (matchedShop) {
+        activeShopId = matchedShop.id;
+        select.value = activeShopId;
+      } else {
+        activeShopId = window.SHOPS_CONFIG[0].id;
+        select.value = activeShopId;
+      }
+
+      connectShopSupabase();
+    }
+
+    // Connect Supabase client for active shop
+    function connectShopSupabase() {
+      const currentShop = window.SHOPS_CONFIG.find(s => s.id === activeShopId) || window.SHOPS_CONFIG[0];
+      if (!currentShop) return;
+
+      activeShopId = currentShop.id;
+      localStorage.setItem("RUGAMA_SELECTED_SHOP_ID", activeShopId);
+
+      document.getElementById("shopHeaderTitle").innerText = currentShop.name;
+      document.getElementById("openingShopLabel").innerText = currentShop.name;
+
+      if (!currentShop.url || !currentShop.key) {
+        alert(`${currentShop.name} nu vendi valid Supabase URL / Key config.js-il illa.`);
+        return;
+      }
+
+      supabaseClient = window.supabase.createClient(currentShop.url, currentShop.key);
       fetchAllData();
     }
 
     function switchActiveShop() {
-      activeShopKey = document.getElementById("selectedShopKey").value;
-      initSupabaseClient();
+      activeShopId = document.getElementById("selectedShopKey").value;
+      connectShopSupabase();
     }
 
     function verifyLogin() {
-      const pin = document.getElementById("loginPasswordInput").value;
+      const input = document.getElementById("loginPasswordInput");
+      if (!input) return;
+
+      const pin = input.value.trim();
       if (pin === "1234") {
-        sessionStorage.setItem("RUGAMA_LOGGED_IN", "true");
+        try {
+          sessionStorage.setItem("RUGAMA_LOGGED_IN", "true");
+        } catch(e) {
+          console.warn("SessionStorage not available", e);
+        }
         document.getElementById("loginScreen").classList.add("hidden");
-        lucide.createIcons();
+        if (window.lucide && lucide.createIcons) {
+          lucide.createIcons();
+        }
       } else {
-        alert("പാസ്‌വേഡ് തെറ്റാണ്!");
-        document.getElementById("loginPasswordInput").value = "";
+        alert("പാസ്‌വേഡ് തെറ്റാണ്! ശരിയായ PIN: 1234");
+        input.value = "";
+        input.focus();
       }
     }
 
@@ -490,6 +550,10 @@
       sessionStorage.removeItem("RUGAMA_LOGGED_IN");
       document.getElementById("loginScreen").classList.remove("hidden");
       document.getElementById("loginPasswordInput").value = "";
+      setTimeout(() => {
+        const inp = document.getElementById("loginPasswordInput");
+        if (inp) inp.focus();
+      }, 300);
     }
 
     function switchTab(tabId) {
@@ -554,7 +618,8 @@
       if (!supabaseClient) return;
       const opening_cash = parseFloat(document.getElementById("setOpeningCash").value) || 0;
       const opening_bank = parseFloat(document.getElementById("setOpeningBank").value) || 0;
-      const shopName = SHOPS_CONFIG[activeShopKey].name;
+      const currentShop = window.SHOPS_CONFIG.find(s => s.id === activeShopId);
+      const shopName = currentShop ? currentShop.name : 'റൂഗാമ സൂപ്പർ മാർക്കറ്റ്';
 
       if (appSettingsRecord && appSettingsRecord.id) {
         const { error } = await supabaseClient.from('app_settings').update({ opening_cash, opening_bank }).eq('id', appSettingsRecord.id);
@@ -584,8 +649,8 @@
           <div class="py-1.5 flex justify-between items-center text-xs">
             <span><b>${x.name}</b></span>
             <div class="flex items-center gap-2">
-              <button onclick="openEditModal('agents', '${x.id}')" class="text-blue-600 hover:text-blue-800 font-bold">Edit</button>
-              <button onclick="requestPin('agents', '${x.id}')" class="text-rose-600 hover:text-rose-800 font-bold">Delete</button>
+              <button onclick="openEditModal('agents', '${x.id}')" class="text-blue-600 hover:text-blue-800 font-bold cursor-pointer">Edit</button>
+              <button onclick="requestPin('agents', '${x.id}')" class="text-rose-600 hover:text-rose-800 font-bold cursor-pointer">Delete</button>
             </div>
           </div>
         `).join('');
@@ -599,8 +664,8 @@
             <div class="py-1.5 flex justify-between items-center text-xs">
               <span><b>${x.name}</b> (${x.type || 'credit'})${ag ? ` [Agent: ${ag.name}]` : ''} - ₹${x.opening_balance || 0}</span>
               <div class="flex items-center gap-2">
-                <button onclick="openEditModal('customers', '${x.id}')" class="text-blue-600 hover:text-blue-800 font-bold">Edit</button>
-                <button onclick="requestPin('customers', '${x.id}')" class="text-rose-600 hover:text-rose-800 font-bold">Delete</button>
+                <button onclick="openEditModal('customers', '${x.id}')" class="text-blue-600 hover:text-blue-800 font-bold cursor-pointer">Edit</button>
+                <button onclick="requestPin('customers', '${x.id}')" class="text-rose-600 hover:text-rose-800 font-bold cursor-pointer">Delete</button>
               </div>
             </div>
           `;
@@ -613,8 +678,8 @@
           <div class="py-1.5 flex justify-between items-center text-xs">
             <span><b>${x.name}</b> (${x.type || 'credit'}) - ₹${x.opening_balance || 0}</span>
             <div class="flex items-center gap-2">
-              <button onclick="openEditModal('vendors', '${x.id}')" class="text-blue-600 hover:text-blue-800 font-bold">Edit</button>
-              <button onclick="requestPin('vendors', '${x.id}')" class="text-rose-600 hover:text-rose-800 font-bold">Delete</button>
+              <button onclick="openEditModal('vendors', '${x.id}')" class="text-blue-600 hover:text-blue-800 font-bold cursor-pointer">Edit</button>
+              <button onclick="requestPin('vendors', '${x.id}')" class="text-rose-600 hover:text-rose-800 font-bold cursor-pointer">Delete</button>
             </div>
           </div>
         `).join('');
@@ -626,8 +691,8 @@
           <div class="py-1.5 flex justify-between items-center text-xs">
             <span><b>${x.name}</b> - ശമ്പളം: ₹${x.monthly_salary || 0} (തുടക്ക ബാക്കി: ₹${x.opening_advance || 0})</span>
             <div class="flex items-center gap-2">
-              <button onclick="openEditModal('employees', '${x.id}')" class="text-blue-600 hover:text-blue-800 font-bold">Edit</button>
-              <button onclick="requestPin('employees', '${x.id}')" class="text-rose-600 hover:text-rose-800 font-bold">Delete</button>
+              <button onclick="openEditModal('employees', '${x.id}')" class="text-blue-600 hover:text-blue-800 font-bold cursor-pointer">Edit</button>
+              <button onclick="requestPin('employees', '${x.id}')" class="text-rose-600 hover:text-rose-800 font-bold cursor-pointer">Delete</button>
             </div>
           </div>
         `).join('');
@@ -639,8 +704,8 @@
           <div class="py-1.5 flex justify-between items-center text-xs">
             <span><b>${x.name}</b> - ₹${x.opening_balance || 0}</span>
             <div class="flex items-center gap-2">
-              <button onclick="openEditModal('expenses_master', '${x.id}')" class="text-blue-600 hover:text-blue-800 font-bold">Edit</button>
-              <button onclick="requestPin('expenses_master', '${x.id}')" class="text-rose-600 hover:text-rose-800 font-bold">Delete</button>
+              <button onclick="openEditModal('expenses_master', '${x.id}')" class="text-blue-600 hover:text-blue-800 font-bold cursor-pointer">Edit</button>
+              <button onclick="requestPin('expenses_master', '${x.id}')" class="text-rose-600 hover:text-rose-800 font-bold cursor-pointer">Delete</button>
             </div>
           </div>
         `).join('');
@@ -738,7 +803,7 @@
           <div><label class="block text-xs font-bold text-slate-600 mb-1">ജീവനക്കാരന്റെ പേര്</label><input type="text" id="edit_name" value="${record.name || ''}" class="w-full text-xs p-2.5 rounded-lg border bg-slate-50" /></div>
           <div><label class="block text-xs font-bold text-slate-600 mb-1">ജോയിനിംഗ് തീയതി</label><input type="date" id="edit_join" value="${record.joining_date || ''}" class="w-full text-xs p-2.5 rounded-lg border bg-slate-50" /></div>
           <div><label class="block text-xs font-bold text-slate-600 mb-1">മാസ ശമ്പളം (₹)</label><input type="number" step="any" id="edit_salary" value="${record.monthly_salary || 0}" class="w-full text-xs p-2.5 rounded-lg border bg-slate-50" /></div>
-          <div><label class="block text-xs font-bold text-slate-600 mb-1">തുടക്കത്തിൽ കൊടുക്കാനുള്ള ബാക്കി (₹)</label><input type="number" step="any" id="edit_advance" value="${record.opening_advance || 0}" class="w-full text-xs p-2.5 rounded-lg border bg-slate-50" /></div>
+          <div><label class="block text-xs font-bold text-slate-600 mb-1">ബാക്കി നൽകാനുള്ള തുക (₹)</label><input type="number" step="any" id="edit_advance" value="${record.opening_advance || 0}" class="w-full text-xs p-2.5 rounded-lg border bg-slate-50" /></div>
         `;
       } else if (table === 'expenses_master') {
         container.innerHTML = `
@@ -840,12 +905,10 @@
     function normalizeDateStr(dStr) {
       if (!dStr) return '';
       dStr = String(dStr).trim();
-      // DD/MM/YYYY or DD-MM-YYYY
       let m1 = dStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
       if (m1) {
         return `${m1[3]}-${m1[2].padStart(2, '0')}-${m1[1].padStart(2, '0')}`;
       }
-      // YYYY-MM-DD or YYYY/MM/DD
       let m2 = dStr.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
       if (m2) {
         return `${m2[1]}-${m2[2].padStart(2, '0')}-${m2[3].padStart(2, '0')}`;
@@ -853,7 +916,6 @@
       return dStr.substring(0, 10);
     }
 
-    // Check party name match (handles spaces, prefix/suffix, "Ramees Advance" etc.)
     function isPartyMatch(transactionParty, targetName) {
       if (!transactionParty || !targetName) return false;
       const tp = transactionParty.trim().toLowerCase();
@@ -896,7 +958,7 @@
         let targetDay = Math.min(joinDay, daysInNextMonth);
         let cycleCompletionDate = new Date(nextYear, nextMonth - 1, targetDay);
 
-        // e.g. joined 10 Oct -> cycle completes on 10 Nov (after 09 Nov passes!)
+        // e.g. joined 10 Oct -> completes on 10 Nov (after 09 Nov passes!)
         if (eDate >= cycleCompletionDate) {
           months++;
           currYear = nextYear;
@@ -1183,7 +1245,7 @@
         `;
       }
 
-      // 3. ALL EMPLOYEES (Daily/Monthly Advance & Net Payable Accurate Calculation)
+      // 3. ALL EMPLOYEES (Fixed: Opening Payable + Earned Salary - Advance)
       else if (cat === 'all_employees') {
         let tableRows = "";
         let totalMonthlyRate = 0, totalEarned = 0, totalPeriodAdv = 0, totalCumAdv = 0, totalNet = 0;
@@ -1204,11 +1266,8 @@
             advanceCumulative += Math.abs(parseFloat(t.cash_amount || 0)) + Math.abs(parseFloat(t.bank_amount || 0)) + Math.abs(parseFloat(t.credit_amount || 0));
           });
 
-          // Accurate cycle counter: earned salary adds only after 1 full month passes from join date
           const completedMonths = getCompletedServiceMonths(e.joining_date, evalDateStr);
           const earnedSalary = completedMonths * sal;
-
-          // Net Payable = Opening Due + Earned Salary - Total Advance Taken
           const netPayable = openingPayable + earnedSalary - advanceCumulative;
 
           if (sal === 0 && openingPayable === 0 && earnedSalary === 0 && advanceCumulative === 0) return;
@@ -1507,7 +1566,7 @@
         `;
       }
 
-      // 7. SINGLE EMPLOYEE DETAILED LEDGER (Advance List & Running Balance)
+      // 7. SINGLE EMPLOYEE DETAILED LEDGER (Accurate Service Accrual & Advance Deduction)
       else if (cat === 'single_employee') {
         const eName = document.getElementById("partySearchInput").value.trim();
         const e = masterEmployees.find(x => isPartyMatch(x.name, eName));
@@ -1788,7 +1847,8 @@
 
     function exportAllToExcel() {
       const wb = XLSX.utils.book_new();
-      const shopName = SHOPS_CONFIG[activeShopKey].name;
+      const currentShop = window.SHOPS_CONFIG.find(s => s.id === activeShopId);
+      const shopName = currentShop ? currentShop.name : "Shop_Data";
 
       if (masterVendors.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(masterVendors), "Vendors");
       if (masterCustomers.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(masterCustomers), "Customers");
